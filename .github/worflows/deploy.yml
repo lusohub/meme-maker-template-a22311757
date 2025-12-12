@@ -10,7 +10,7 @@ env:
   REGISTRY_REPOSITORY: ${{ secrets.REGISTRY_REPOSITORY }}
   GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}
   GKE_ZONE: europe-west1
-  APP_NAME: memes-maker
+  APP_NAME: meme-web-app
 
 jobs:
   build-push-deploy:
@@ -24,8 +24,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-      with:
-        lfs: true
 
     - name: Google Auth
       id: auth
@@ -51,23 +49,12 @@ jobs:
     - name: Install Helm
       uses: azure/setup-helm@v4.2.0
 
-    - name: Get Secrets from GCP
-      id: secrets
-      run: |-
-        echo "redis_host=$(gcloud secrets versions access latest --secret=redis-host --project=${{ env.PROJECT_ID }})" >> $GITHUB_OUTPUT
-        echo "redis_port=$(gcloud secrets versions access latest --secret=redis-port --project=${{ env.PROJECT_ID }})" >> $GITHUB_OUTPUT
-        echo "redis_auth_string=$(gcloud secrets versions access latest --secret=redis-auth-string --project=${{ env.PROJECT_ID }})" >> $GITHUB_OUTPUT
-
     - name: Deploy to GKE
       run: |-
         helm upgrade --install ${{ env.APP_NAME }} ./etc/chart \
           --set image.repository=${{ env.REGISTRY_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REGISTRY_REPOSITORY }}/${{ env.APP_NAME }} \
           --set image.tag=${{ github.sha }} \
-          --set projectId=${{ env.PROJECT_ID }} \
-          --set secrets.discord_url=${{ secrets.DISCORD_URL }} \
+          --set projectId=${{ secrets.GCP_PROJECT_ID }} \
           --set secrets.gcp_project_id=${{ secrets.GCP_PROJECT_ID }} \
-          --set secrets.pubsub_subscription_id=${{ secrets.PUBSUB_SUBSCRIPTION_ID }} \
-          --set secrets.redis_host=${{ steps.secrets.outputs.redis_host }} \
-          --set secrets.redis_port=${{ steps.secrets.outputs.redis_port }} \
-          --set secrets.redis_auth_string=${{ steps.secrets.outputs.redis_auth_string }} \
+          --set secrets.pubsub_topic_id=${{ secrets.PUBSUB_TOPIC_ID }} \
           --wait
