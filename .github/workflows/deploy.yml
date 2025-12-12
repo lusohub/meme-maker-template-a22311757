@@ -71,3 +71,4 @@ jobs:
           --set secrets.redis_port=${{ steps.secrets.outputs.redis_port }} \
           --set secrets.redis_auth_string=${{ steps.secrets.outputs.redis_auth_string }} \
           --wait
+          
